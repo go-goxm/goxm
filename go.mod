@@ -1,4 +1,4 @@
-module github.com/goxm/goxm
+module github.com/go-goxm/goxm
 
 go 1.22.0
 

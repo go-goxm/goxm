@@ -3,7 +3,7 @@ GOXM: GO proXy Manager
 
 The `go` command loads dependencies from the public proxy server (proxy.golang.org) or directly from the source version control system (VCS).
 
-The `goxm` is a wrapper around the standard `go` command that can load (and publish) dependencies from alternate locations or services like AWS CodeArtifact.
+The `goxm` tool is a wrapper around the standard `go` command that can load (and publish) dependencies from alternate repositories or services like AWS CodeArtifact.
 
 ## Installation
 
