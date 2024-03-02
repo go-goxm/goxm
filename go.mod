@@ -6,6 +6,7 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.25.2
 	github.com/aws/aws-sdk-go-v2/config v1.27.4
 	github.com/aws/aws-sdk-go-v2/service/codeartifact v1.25.1
+	golang.org/x/mod v0.15.0
 )
 
 require (

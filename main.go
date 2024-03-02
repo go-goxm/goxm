@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -8,8 +10,12 @@ import (
 	"net/http/httptest"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strings"
+
+	"golang.org/x/mod/module"
+	"golang.org/x/mod/zip"
 )
 
 func main() {
@@ -40,7 +46,7 @@ func run() error {
 	}
 
 	if len(os.Args) > 1 && os.Args[1] == "publish" {
-		return publish(os.Args[2:])
+		return publish(context.Background(), config, os.Args[2:])
 	}
 
 	proxyServer := httptest.NewServer(newProxyHandler(config))
@@ -74,16 +80,21 @@ func newProxyHandler(config *Config) http.Handler {
 			return
 		}
 
-		module := strings.Trim(req.URL.Path[:atIndex], "/")
+		modPath, err := module.UnescapePath(strings.Trim(req.URL.Path[:atIndex], "/"))
+		if err != nil {
+			resp.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
 		attifact := req.URL.Path[atIndex:]
 
 		for moduleRegexp, repository := range config.Repos {
-			match, _ := regexp.MatchString(moduleRegexp, module)
+			match, _ := regexp.MatchString(moduleRegexp, modPath)
 			if !match {
 				continue
 			}
 
-			reader, err := repository.Get(req.Context(), module, attifact)
+			reader, err := repository.Get(req.Context(), modPath, attifact)
 			if err != nil {
 				// Respond with `Forbidden`` to prevent Go from
 				// trying to get the module from another proxy
@@ -106,6 +117,55 @@ func newProxyHandler(config *Config) http.Handler {
 	})
 }
 
-func publish(args []string) error {
-	return fmt.Errorf("Publish is not implemented")
+func publish(ctx context.Context, config *Config, args []string) error {
+
+	if len(args) == 0 || len(args) > 1 {
+		return fmt.Errorf("Unsupported arguments: Usage: goxm publish <version>")
+	}
+
+	version := strings.TrimSpace(args[0])
+
+	modPath, goModData, goModFilePath, err := getGoModule(ctx)
+	if err != nil {
+		return err
+	}
+
+	infoData, gitRootPath, err := getGoInfoFromGit(ctx, version)
+	if err != nil {
+		return err
+	}
+
+	subDir, err := filepath.Rel(gitRootPath, filepath.Dir(goModFilePath))
+	if err != nil {
+		return fmt.Errorf("Unable to resolve subdirectory within Git repository: %w", err)
+	}
+
+	modVersion := module.Version{
+		Path:    modPath,
+		Version: version,
+	}
+
+	zipBuffer := bytes.NewBuffer(nil)
+	err = zip.CreateFromVCS(zipBuffer, modVersion, gitRootPath, version, subDir)
+	if err != nil {
+		return err
+	}
+
+	for moduleRegexp, repository := range config.Repos {
+		match, _ := regexp.MatchString(moduleRegexp, modPath)
+		if !match {
+			continue
+		}
+
+		return repository.Put(
+			context.Background(),
+			modPath,
+			version,
+			goModData,
+			infoData,
+			zipBuffer.Bytes(),
+		)
+	}
+
+	return fmt.Errorf("No repository found matching module: %v", modPath)
 }
