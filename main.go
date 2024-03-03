@@ -19,8 +19,8 @@ import (
 )
 
 func main() {
-	if err := run(); err != nil {
-		Logf("%v", err)
+	if err := run(context.Background(), os.Args[1:]); err != nil {
+		logf("%v", err)
 
 		var exitCode = 1
 		var exitErr *exec.ExitError
@@ -31,22 +31,18 @@ func main() {
 	}
 }
 
-func Logf(format string, args ...any) {
-	if !strings.HasSuffix(format, "\n") {
-		format += "\n"
-	}
-	fmt.Fprintf(os.Stderr, "GOXM: "+format, args...)
-}
-
-func run() error {
-
+func run(ctx context.Context, args []string) error {
 	config, err := LoadDefaultConfig()
 	if err != nil {
 		return err
 	}
+	return runWithConfig(ctx, config, args)
+}
 
-	if len(os.Args) > 1 && os.Args[1] == "publish" {
-		return publish(context.Background(), config, os.Args[2:])
+func runWithConfig(ctx context.Context, config *Config, args []string) error {
+
+	if len(args) > 0 && args[0] == "publish" {
+		return publish(context.Background(), config, args[1:])
 	}
 
 	proxyServer := httptest.NewServer(newProxyHandler(config))
@@ -59,7 +55,7 @@ func run() error {
 	goProxy = fmt.Sprintf("%s,%s", proxyServer.URL, goProxy)
 
 	cmd := exec.Command("go")
-	cmd.Args = append(cmd.Args, os.Args[1:]...)
+	cmd.Args = append(cmd.Args, args...)
 	cmd.Env = append(os.Environ(), "GOPROXY="+goProxy)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
@@ -76,12 +72,14 @@ func newProxyHandler(config *Config) http.Handler {
 
 		atIndex := strings.Index(req.URL.Path, "@")
 		if atIndex < 0 {
+			logf("Error parsing request path: %v: '@' expected", req.URL.Path)
 			resp.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
 		modPath, err := module.UnescapePath(strings.Trim(req.URL.Path[:atIndex], "/"))
 		if err != nil {
+			logf("Error unescaping module path: %v", err)
 			resp.WriteHeader(http.StatusBadRequest)
 			return
 		}
@@ -99,13 +97,13 @@ func newProxyHandler(config *Config) http.Handler {
 				// Respond with `Forbidden`` to prevent Go from
 				// trying to get the module from another proxy
 				resp.WriteHeader(http.StatusForbidden)
-				Logf("%v", err)
+				logf("%v", err)
 				return
 			}
 
 			_, err = io.Copy(resp, reader)
 			if err != nil {
-				Logf("Error writing response: %v: %v\n", req.URL.Path, err)
+				logf("Error writing response: %v: %v", req.URL.Path, err)
 				return
 			}
 			reader.Close()

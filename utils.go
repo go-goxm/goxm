@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"golang.org/x/mod/modfile"
@@ -18,6 +19,13 @@ import (
 type Info struct {
 	Version string    // version string
 	Time    time.Time // commit time
+}
+
+func logf(format string, args ...any) {
+	if !strings.HasSuffix(format, "\n") {
+		format += "\n"
+	}
+	fmt.Fprintf(os.Stderr, "GOXM: "+format, args...)
 }
 
 func getGoInfoFromGit(ctx context.Context, version string) ([]byte, string, error) {

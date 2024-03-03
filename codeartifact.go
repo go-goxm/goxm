@@ -16,6 +16,20 @@ import (
 	codeartifactTypes "github.com/aws/aws-sdk-go-v2/service/codeartifact/types"
 )
 
+type CodeArtifactClient interface {
+	GetPackageVersionAsset(
+		ctx context.Context,
+		params *codeartifact.GetPackageVersionAssetInput,
+		optFns ...func(*codeartifact.Options),
+	) (*codeartifact.GetPackageVersionAssetOutput, error)
+
+	PublishPackageVersion(
+		ctx context.Context,
+		params *codeartifact.PublishPackageVersionInput,
+		optFns ...func(*codeartifact.Options),
+	) (*codeartifact.PublishPackageVersionOutput, error)
+}
+
 type CodeArtifactRepoConfig struct {
 	RepoTypeConfig
 	Domain      *string `json:"domain"`
@@ -24,7 +38,7 @@ type CodeArtifactRepoConfig struct {
 	DomainOwner *string `json:"domain_owner"`
 	Publish     bool    `json:"publish"`
 
-	client *codeartifact.Client
+	client CodeArtifactClient
 }
 
 func (r *CodeArtifactRepoConfig) Get(ctx context.Context, module, attifact string) (io.ReadCloser, error) {
@@ -64,7 +78,7 @@ func (r *CodeArtifactRepoConfig) Get(ctx context.Context, module, attifact strin
 	if err != nil {
 		return nil, fmt.Errorf("Error getting CodeArtifact asset: %v: %w", codeArtGetAssetString(input), err)
 	}
-	Logf("Got CodeArtifact asset: %v", codeArtGetAssetString(input))
+	logf("Got CodeArtifact asset: %v", codeArtGetAssetString(input))
 
 	return output.Asset, nil
 }
@@ -98,7 +112,7 @@ func (r *CodeArtifactRepoConfig) Put(ctx context.Context, modPath, version strin
 	if err != nil {
 		return fmt.Errorf("Error publishing CodeArtifact asset: %v: %w", codeArtPublishAssetString(input), err)
 	}
-	Logf("Published CodeArtifact asset: %v", codeArtPublishAssetString(input))
+	logf("Published CodeArtifact asset: %v", codeArtPublishAssetString(input))
 
 	// Publish mod file
 	input = &codeartifact.PublishPackageVersionInput{
@@ -119,7 +133,7 @@ func (r *CodeArtifactRepoConfig) Put(ctx context.Context, modPath, version strin
 	if err != nil {
 		return fmt.Errorf("Error publishing CodeArtifact asset: %v: %w", codeArtPublishAssetString(input), err)
 	}
-	Logf("Published CodeArtifact asset: %v", codeArtPublishAssetString(input))
+	logf("Published CodeArtifact asset: %v", codeArtPublishAssetString(input))
 
 	// Publish zip file
 	input = &codeartifact.PublishPackageVersionInput{
@@ -140,19 +154,18 @@ func (r *CodeArtifactRepoConfig) Put(ctx context.Context, modPath, version strin
 	if err != nil {
 		return fmt.Errorf("Error publishing CodeArtifact asset: %v: %w", codeArtPublishAssetString(input), err)
 	}
-	Logf("Published CodeArtifact asset: %v", codeArtPublishAssetString(input))
+	logf("Published CodeArtifact asset: %v", codeArtPublishAssetString(input))
 
 	return nil
 }
 
-func (r *CodeArtifactRepoConfig) getClient(ctx context.Context) (*codeartifact.Client, error) {
+func (r *CodeArtifactRepoConfig) getClient(ctx context.Context) (CodeArtifactClient, error) {
 	if r.client == nil {
 		config, err := awsconfig.LoadDefaultConfig(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("Error loading AWS config: %w", err)
 		}
 		r.client = codeartifact.NewFromConfig(config)
-
 	}
 	return r.client, nil
 }
