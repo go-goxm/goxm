@@ -1,0 +1,23 @@
+{
+    "repos": {
+        "golang.org/x/crypto": {
+            "type":"codeartifact",
+            "domain": "TestDomain1",
+            "domain_owner": "111111111111",
+            "repository": "TestRepo1"
+        },
+        "github.com/mattn/*": {
+            "type":"codeartifact",
+            "domain": "TestDomain2",
+            "domain_owner": "222222222222",
+            "repository": "TestRepo2",
+            "namespace": "Namespace2"
+        },
+        "github.com/go-goxm/*": {
+            "type":"codeartifact",
+            "domain": "TestDomain1",
+            "domain_owner": "111111111111",
+            "repository": "TestRepo1"
+        }
+    }
+}

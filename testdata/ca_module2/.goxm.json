@@ -1,0 +1,10 @@
+{
+    "repos": {
+        "github.com/kelseyhightower/envconfig": {
+            "type":"codeartifact",
+            "domain": "TestDomain1",
+            "domain_owner": "111111111111",
+            "repository": "TestRepo1"
+        }
+    }
+}
