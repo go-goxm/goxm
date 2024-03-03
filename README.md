@@ -20,7 +20,7 @@ An exmaple `.goxm.json` is below:
 ```json
 {
     "repos": {
-        "github.com/goxm/*": {
+        "example.com/company/*": {
             "type": "CodeArtfact",
             "repository": "example_repo",
             "domain": "example_domain",
