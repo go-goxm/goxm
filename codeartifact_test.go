@@ -167,6 +167,83 @@ func TestCodeArtifactGet(t *testing.T) {
 	}
 }
 
+func TestCodeArtifactBuild(t *testing.T) {
+	// Cache is created with read-write permissions
+	// to avoid error on temp directory cleanup
+	t.Setenv("GOFLAGS", "-modcacherw") 
+	t.Setenv("GOMODCACHE", t.TempDir())
+	chdir(t, "./testdata/ca_module3")
+
+	config, err := LoadDefaultConfig()
+	require.Nilf(t, err, "Error loading default config: %v", err)
+
+	results := make(map[string][]*codeartifact.GetPackageVersionAssetInput)
+
+	for mre, repo := range config.Repos {
+		modRegExp := mre
+
+		repo := repo.(*CodeArtifactRepoConfig)
+
+		repo.client = &MockCodeArtifactClient{
+			GetPackageVersionAssetFunc: func(
+				ctx context.Context,
+				params *codeartifact.GetPackageVersionAssetInput,
+				optFns ...func(*codeartifact.Options),
+			) (*codeartifact.GetPackageVersionAssetOutput, error) {
+				results[modRegExp] = append(results[modRegExp], params)
+				return &codeartifact.GetPackageVersionAssetOutput{
+					Asset: io.NopCloser(fileToReader(t, "../ca_module1_assets/"+aws.ToString(params.Asset))),
+				},  nil
+			},
+		}
+	}
+
+	buildOutputPath := t.TempDir()+"/ca_module3"
+	err = runWithConfig(context.Background(), config, []string{"build", "-o", buildOutputPath})
+	require.Nil(t, err, err)
+	require.FileExists(t, buildOutputPath)
+
+	expectedResults := map[string][]*codeartifact.GetPackageVersionAssetInput{
+		"github\\.com/go-goxm/ca_module1": []*codeartifact.GetPackageVersionAssetInput{
+			{
+				Asset:          aws.String("v0.1.0.zip"),
+				Package:        aws.String("github.com+2Fgo-goxm+2Fca_module1"),
+				PackageVersion: aws.String("v0.1.0"),
+				Namespace:      aws.String("go"),
+				Repository:     aws.String("TestRepo2"),
+				Domain:         aws.String("TestDomain2"),
+				DomainOwner:    aws.String("222222222222"),
+				Format:         codeartifactTypes.PackageFormatGeneric,
+			},
+			{
+				Asset:          aws.String("v0.1.0.mod"),
+				Package:        aws.String("github.com+2Fgo-goxm+2Fca_module1"),
+				PackageVersion: aws.String("v0.1.0"),
+				Namespace:      aws.String("go"),
+				Repository:     aws.String("TestRepo2"),
+				Domain:         aws.String("TestDomain2"),
+				DomainOwner:    aws.String("222222222222"),
+				Format:         codeartifactTypes.PackageFormatGeneric,
+			},
+			{
+				Asset:          aws.String("v0.1.0.info"),
+				Package:        aws.String("github.com+2Fgo-goxm+2Fca_module1"),
+				PackageVersion: aws.String("v0.1.0"),
+				Namespace:      aws.String("go"),
+				Repository:     aws.String("TestRepo2"),
+				Domain:         aws.String("TestDomain2"),
+				DomainOwner:    aws.String("222222222222"),
+				Format:         codeartifactTypes.PackageFormatGeneric,
+			},
+		},
+	}
+
+	require.ElementsMatch(t, maps.Keys(expectedResults), maps.Keys(results))
+	for k, result := range results {
+		require.ElementsMatch(t, expectedResults[k], result)
+	}
+}
+
 func TestCodeArtifactPublish(t *testing.T) {
 	t.Setenv("GOMODCACHE", t.TempDir())
 	chdir(t, "./testdata/ca_module1")

@@ -1,0 +1,10 @@
+{
+    "repos": {
+        "github.com/go-goxm/ca_module1": {
+            "type":"codeartifact",
+            "domain": "TestDomain2",
+            "domain_owner": "222222222222",
+            "repository": "TestRepo2"
+        }
+    }
+}
