@@ -5,6 +5,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Default CodeArtifact namespace changed to `goxm`
+
 ### Added
 - Add tests for AWS CodeArtifact support
 
