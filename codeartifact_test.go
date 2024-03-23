@@ -277,7 +277,7 @@ func TestCodeArtifactPublish(t *testing.T) {
 		"github\\.com/go-goxm/(.*)": []*codeartifact.PublishPackageVersionInput{
 			{
 				AssetName:      aws.String("v0.1.0.info"),
-				AssetSHA256:    aws.String("8b754452eea6eb03ae76b8c39572b90940a1a037026c1f9ca0f5d87e4fc3791b"),
+				AssetSHA256:    aws.String("b24a728889e313df1de4f54573bc893a26ce7e2e15059524b6430996d56668a4"),
 				AssetContent:   fileToReader(t, "../ca_module1_assets/v0.1.0.info"),
 				Package:        aws.String("github.com+2Fgo-goxm+2Fca_module1"),
 				PackageVersion: aws.String("v0.1.0"),

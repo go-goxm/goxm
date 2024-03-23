@@ -47,7 +47,7 @@ func getGoInfoFromGit(ctx context.Context, version string) ([]byte, string, erro
 
 	gitVersionInfo := Info{
 		Version: version,
-		Time:    time.Unix(gitCommitTimeInt64, 0),
+		Time:    time.Unix(gitCommitTimeInt64, 0).UTC(),
 	}
 
 	gitVersionInfoJSON, err := json.MarshalIndent(gitVersionInfo, "", "    ")

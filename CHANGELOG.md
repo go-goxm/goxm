@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Default CodeArtifact namespace changed to `goxm`
+- Use UTC zone for time in info file
 
 ### Added
 - Add tests for AWS CodeArtifact support
