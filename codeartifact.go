@@ -185,7 +185,7 @@ func codeArtPackageEscape(pkg string) string {
 
 func codeArtNamespaceDefault(namespace *string) *string {
 	if namespace == nil {
-		return aws.String("go")
+		return aws.String("goxm")
 	}
 	return namespace
 }
