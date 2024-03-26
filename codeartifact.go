@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"io"
+	"net/http"
 	"path"
 	"strings"
 
@@ -47,9 +48,9 @@ type CodeArtifactRepoConfig struct {
 	client CodeArtifactClient
 }
 
-func (r *CodeArtifactRepoConfig) Get(ctx context.Context, module, attifact string) (io.ReadCloser, error) {
+func (r *CodeArtifactRepoConfig) Get(ctx context.Context, module, attifact string) (io.ReadCloser, int, error) {
 	if attifact == "@latest" {
-		return nil, fmt.Errorf("Not implemented: %v/%v", module, attifact)
+		return nil, http.StatusNotFound, fmt.Errorf("Not implemented: %v/%v", module, attifact)
 	}
 
 	pkg := codeArtPackageEscape(module)
@@ -57,7 +58,7 @@ func (r *CodeArtifactRepoConfig) Get(ctx context.Context, module, attifact strin
 
 	client, err := r.getClient(ctx)
 	if err != nil {
-		return nil, err
+		return nil, http.StatusForbidden, err
 	}
 
 	if attifact == "@v/list" {
@@ -74,7 +75,7 @@ func (r *CodeArtifactRepoConfig) Get(ctx context.Context, module, attifact strin
 
 		output, err := client.ListPackageVersions(ctx, input)
 		if err != nil {
-			return nil, fmt.Errorf("Error listing CodeArtifact versions: %v: %w", codeArtListVersionsString(input), err)
+			return nil, http.StatusNotFound, fmt.Errorf("Error listing CodeArtifact versions: %v: %w", codeArtListVersionsString(input), err)
 		}
 		logf("Got CodeArtifact versions: %v Count:%d", codeArtListVersionsString(input), len(output.Versions))
 
@@ -83,14 +84,14 @@ func (r *CodeArtifactRepoConfig) Get(ctx context.Context, module, attifact strin
 			fmt.Fprintf(buf, "%v\n", aws.ToString(version.Version))
 		}
 
-		return io.NopCloser(buf), nil
+		return io.NopCloser(buf), 0, nil
 	}
 
 	asset := attifact[3:]
 	assetExt := path.Ext(asset)
 
 	if !slices.Contains([]string{".info", ".mod", ".zip"}, assetExt) {
-		return nil, fmt.Errorf("Asset extension not supported: %v/%v", module, attifact)
+		return nil, http.StatusForbidden, fmt.Errorf("Asset extension not supported: %v/%v", module, attifact)
 	}
 
 	version := asset[:len(asset)-len(assetExt)]
@@ -108,11 +109,11 @@ func (r *CodeArtifactRepoConfig) Get(ctx context.Context, module, attifact strin
 
 	output, err := client.GetPackageVersionAsset(ctx, input)
 	if err != nil {
-		return nil, fmt.Errorf("Error getting CodeArtifact asset: %v: %w", codeArtGetAssetString(input), err)
+		return nil, http.StatusForbidden, fmt.Errorf("Error getting CodeArtifact asset: %v: %w", codeArtGetAssetString(input), err)
 	}
 	logf("Got CodeArtifact asset: %v", codeArtGetAssetString(input))
 
-	return output.Asset, nil
+	return output.Asset, 0, nil
 }
 
 func (r *CodeArtifactRepoConfig) Put(ctx context.Context, modPath, version string, goModData, infoData, zipData []byte) error {

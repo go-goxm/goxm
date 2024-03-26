@@ -5,6 +5,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1] - 2024-03-26
+
+### Changed
+- Rely with 404 status code for list requests
+
 ## [0.4.0] - 2024-03-26
 
 ### Added
@@ -33,7 +38,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Initial release with basic support for AWS CodeArtifact
 
 
-[unreleased]: https://github.com/go-goxm/goxm/compare/v0.4.0...HEAD
+[unreleased]: https://github.com/go-goxm/goxm/compare/v0.4.1...HEAD
+[0.4.1]: https://github.com/go-goxm/goxm/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/go-goxm/goxm/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/go-goxm/goxm/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/go-goxm/goxm/compare/v0.1.0...v0.2.0
