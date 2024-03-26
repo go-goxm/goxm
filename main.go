@@ -100,11 +100,11 @@ func newProxyHandler(config *Config) http.Handler {
 				continue
 			}
 
-			reader, err := repository.Get(req.Context(), modPath, attifact)
+			reader, status, err := repository.Get(req.Context(), modPath, attifact)
 			if err != nil {
 				// Respond with `Forbidden`` to prevent Go from
 				// trying to get the module from another proxy
-				resp.WriteHeader(http.StatusForbidden)
+				resp.WriteHeader(status)
 				logf("%v", err)
 				return
 			}
