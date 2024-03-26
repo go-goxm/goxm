@@ -14,6 +14,7 @@ import (
 	"regexp"
 	"strings"
 
+	"golang.org/x/exp/maps"
 	"golang.org/x/mod/module"
 	"golang.org/x/mod/zip"
 )
@@ -54,9 +55,16 @@ func runWithConfig(ctx context.Context, config *Config, args []string) error {
 	}
 	goProxy = fmt.Sprintf("%s,%s", proxyServer.URL, goProxy)
 
+	goNoSumDB := os.Getenv("GONOSUMDB")
+	if goNoSumDB == "" {
+		goNoSumDB = strings.Join(maps.Keys(config.Repos), ",")
+	} else {
+		goNoSumDB += "," + strings.Join(maps.Keys(config.Repos), ",")
+	}
+
 	cmd := exec.Command("go")
 	cmd.Args = append(cmd.Args, args...)
-	cmd.Env = append(os.Environ(), "GOPROXY="+goProxy)
+	cmd.Env = append(os.Environ(), "GOPROXY="+goProxy, "GONOSUMDB="+goNoSumDB)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -86,8 +94,8 @@ func newProxyHandler(config *Config) http.Handler {
 
 		attifact := req.URL.Path[atIndex:]
 
-		for moduleRegexp, repository := range config.Repos {
-			match, _ := regexp.MatchString(moduleRegexp, modPath)
+		for moduleGlob, repository := range config.Repos {
+			match, _ := regexp.MatchString(globToRegexp(moduleGlob), modPath)
 			if !match {
 				continue
 			}
@@ -135,7 +143,17 @@ func publish(ctx context.Context, config *Config, args []string) error {
 
 	subDir, err := filepath.Rel(gitRootPath, filepath.Dir(goModFilePath))
 	if err != nil {
-		return fmt.Errorf("Unable to resolve subdirectory within Git repository: %w", err)
+		return fmt.Errorf("Unable to resolve relative path to Git repository: %w", err)
+	}
+
+	if subDir == "." {
+		// If the Git root and the module directories are the same
+		// then clear `subDir` so that all paths are included in
+		// the zip file and not just the ones starting with "."
+		// See the `CreateFromVCS()` docs for more information
+		subDir = ""
+	} else if strings.HasPrefix(subDir, "..") {
+		return fmt.Errorf("Unable to resolve go.mod path within Git repository")
 	}
 
 	modVersion := module.Version{
@@ -149,8 +167,8 @@ func publish(ctx context.Context, config *Config, args []string) error {
 		return err
 	}
 
-	for moduleRegexp, repository := range config.Repos {
-		match, _ := regexp.MatchString(moduleRegexp, modPath)
+	for moduleGlob, repository := range config.Repos {
+		match, _ := regexp.MatchString(globToRegexp(moduleGlob), modPath)
 		if !match {
 			continue
 		}

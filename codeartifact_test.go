@@ -75,7 +75,7 @@ func TestCodeArtifactModDownload(t *testing.T) {
 	require.Error(t, err)
 
 	expectedResults := map[string][]*codeartifact.GetPackageVersionAssetInput{
-		"golang\\.org/x/crypto": []*codeartifact.GetPackageVersionAssetInput{
+		"golang.org/x/crypto": []*codeartifact.GetPackageVersionAssetInput{
 			{
 				Asset:          aws.String("v0.17.0.mod"),
 				Package:        aws.String("golang.org+2Fx+2Fcrypto"),
@@ -87,7 +87,7 @@ func TestCodeArtifactModDownload(t *testing.T) {
 				Format:         codeartifactTypes.PackageFormatGeneric,
 			},
 		},
-		"github\\.com/mattn/(.*)": []*codeartifact.GetPackageVersionAssetInput{
+		"github.com/mattn/*": []*codeartifact.GetPackageVersionAssetInput{
 			{
 				Asset:          aws.String("v0.0.20.mod"),
 				Package:        aws.String("github.com+2Fmattn+2Fgo-isatty"),
@@ -147,7 +147,7 @@ func TestCodeArtifactGet(t *testing.T) {
 	require.Error(t, err)
 
 	expectedResults := map[string][]*codeartifact.GetPackageVersionAssetInput{
-		"github\\.com/kelseyhightower/envconfig": []*codeartifact.GetPackageVersionAssetInput{
+		"github.com/kelseyhightower/envconfig": []*codeartifact.GetPackageVersionAssetInput{
 			{
 				Asset:          aws.String("v1.4.0.info"),
 				Package:        aws.String("github.com+2Fkelseyhightower+2Fenvconfig"),
@@ -170,7 +170,7 @@ func TestCodeArtifactGet(t *testing.T) {
 func TestCodeArtifactBuild(t *testing.T) {
 	// Cache is created with read-write permissions
 	// to avoid error on temp directory cleanup
-	t.Setenv("GOFLAGS", "-modcacherw") 
+	t.Setenv("GOFLAGS", "-modcacherw")
 	t.Setenv("GOMODCACHE", t.TempDir())
 	chdir(t, "./testdata/ca_module3")
 
@@ -193,18 +193,18 @@ func TestCodeArtifactBuild(t *testing.T) {
 				results[modRegExp] = append(results[modRegExp], params)
 				return &codeartifact.GetPackageVersionAssetOutput{
 					Asset: io.NopCloser(fileToReader(t, "../ca_module1_assets/"+aws.ToString(params.Asset))),
-				},  nil
+				}, nil
 			},
 		}
 	}
 
-	buildOutputPath := t.TempDir()+"/ca_module3"
+	buildOutputPath := t.TempDir() + "/ca_module3"
 	err = runWithConfig(context.Background(), config, []string{"build", "-o", buildOutputPath})
 	require.Nil(t, err, err)
 	require.FileExists(t, buildOutputPath)
 
 	expectedResults := map[string][]*codeartifact.GetPackageVersionAssetInput{
-		"github\\.com/go-goxm/ca_module1": []*codeartifact.GetPackageVersionAssetInput{
+		"github.com/go-goxm/ca_module1": []*codeartifact.GetPackageVersionAssetInput{
 			{
 				Asset:          aws.String("v0.1.0.zip"),
 				Package:        aws.String("github.com+2Fgo-goxm+2Fca_module1"),
@@ -274,7 +274,7 @@ func TestCodeArtifactPublish(t *testing.T) {
 	require.Nil(t, err, err)
 
 	expectedResults := map[string][]*codeartifact.PublishPackageVersionInput{
-		"github\\.com/go-goxm/(.*)": []*codeartifact.PublishPackageVersionInput{
+		"github.com/go-goxm/*": []*codeartifact.PublishPackageVersionInput{
 			{
 				AssetName:      aws.String("v0.1.0.info"),
 				AssetSHA256:    aws.String("b24a728889e313df1de4f54573bc893a26ce7e2e15059524b6430996d56668a4"),

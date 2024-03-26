@@ -67,9 +67,7 @@ func LoadConfig(configReader io.Reader) (*Config, error) {
 	}
 
 	for moduleGlob, rawRepoConfig := range rawConfig.Repos {
-		moduleQuoted := regexp.QuoteMeta(moduleGlob)
-		moduleRegexp := strings.ReplaceAll(moduleQuoted, "\\*", "(.*)")
-		_, err = regexp.Compile(moduleRegexp)
+		_, err = regexp.Compile(globToRegexp(moduleGlob))
 		if err != nil {
 			return nil, fmt.Errorf("Malformed module glob: %v: %w", moduleGlob, err)
 		}
@@ -87,7 +85,7 @@ func LoadConfig(configReader io.Reader) (*Config, error) {
 			if err != nil {
 				return nil, fmt.Errorf("Error parsing repo config: %v: %w", repoTypeConfig.Type, err)
 			}
-			config.Repos[moduleRegexp] = codeArtifactRepoConfig
+			config.Repos[moduleGlob] = codeArtifactRepoConfig
 
 		default:
 			return nil, fmt.Errorf("Repository type not supported: %v", repoTypeConfig.Type)
@@ -95,4 +93,8 @@ func LoadConfig(configReader io.Reader) (*Config, error) {
 	}
 
 	return config, nil
+}
+
+func globToRegexp(glob string) string {
+	return strings.ReplaceAll(regexp.QuoteMeta(glob), "\\*", "(.*)")
 }
