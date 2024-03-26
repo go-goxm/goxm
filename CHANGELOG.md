@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.3.0] - 2024-03-25
 
 ### Fixed
-- Fixed issue with files not include in zip file when module is in the root of the repository
+- Fixed issue with files not included in zip file when module is in the root of the repository
 
 ### Added
 - Set the `GONOSUMDB` for all module patterns specified in the configuration file
