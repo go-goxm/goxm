@@ -35,9 +35,12 @@ An exmaple `.goxm.json` is below:
 ### Publish module to an artifact repository:
 
 ```sh
+git checkout $version
 goxm publish $version
 ```
 where `$version` in the Git tag to publish
+
+NOTE: There is a known limitation requiring the version being published to be currently checked out.
 
 ### Download module from an artifact repository:
 

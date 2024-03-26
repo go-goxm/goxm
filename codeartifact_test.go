@@ -16,6 +16,12 @@ import (
 )
 
 type MockCodeArtifactClient struct {
+	ListPackageVersionsFunc func(
+		ctx context.Context,
+		params *codeartifact.ListPackageVersionsInput,
+		optFns ...func(*codeartifact.Options),
+	) (*codeartifact.ListPackageVersionsOutput, error)
+
 	GetPackageVersionAssetFunc func(
 		ctx context.Context,
 		params *codeartifact.GetPackageVersionAssetInput,
@@ -35,6 +41,14 @@ func (c *MockCodeArtifactClient) GetPackageVersionAsset(
 	optFns ...func(*codeartifact.Options),
 ) (*codeartifact.GetPackageVersionAssetOutput, error) {
 	return c.GetPackageVersionAssetFunc(ctx, params, optFns...)
+}
+
+func (c *MockCodeArtifactClient) ListPackageVersions(
+	ctx context.Context,
+	params *codeartifact.ListPackageVersionsInput,
+	optFns ...func(*codeartifact.Options),
+) (*codeartifact.ListPackageVersionsOutput, error) {
+	return c.ListPackageVersionsFunc(ctx, params, optFns...)
 }
 
 func (c *MockCodeArtifactClient) PublishPackageVersion(
