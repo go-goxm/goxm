@@ -17,6 +17,12 @@ import (
 )
 
 type CodeArtifactClient interface {
+	ListPackageVersions(
+		ctx context.Context,
+		params *codeartifact.ListPackageVersionsInput,
+		optFns ...func(*codeartifact.Options),
+	) (*codeartifact.ListPackageVersionsOutput, error)
+
 	GetPackageVersionAsset(
 		ctx context.Context,
 		params *codeartifact.GetPackageVersionAssetInput,
@@ -42,8 +48,42 @@ type CodeArtifactRepoConfig struct {
 }
 
 func (r *CodeArtifactRepoConfig) Get(ctx context.Context, module, attifact string) (io.ReadCloser, error) {
-	if attifact == "@v/list" || attifact == "@latest" {
+	if attifact == "@latest" {
 		return nil, fmt.Errorf("Not implemented: %v/%v", module, attifact)
+	}
+
+	pkg := codeArtPackageEscape(module)
+	namespace := codeArtNamespaceDefault(r.Namespace)
+
+	client, err := r.getClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if attifact == "@v/list" {
+		input := &codeartifact.ListPackageVersionsInput{
+			Package:     aws.String(pkg),
+			Domain:      r.Domain,
+			Namespace:   namespace,
+			Repository:  r.Repository,
+			DomainOwner: r.DomainOwner,
+			Format:      codeartifactTypes.PackageFormatGeneric,
+			Status:      codeartifactTypes.PackageVersionStatusPublished,
+			MaxResults:  aws.Int32(50),
+		}
+
+		output, err := client.ListPackageVersions(ctx, input)
+		if err != nil {
+			return nil, fmt.Errorf("Error listing CodeArtifact versions: %v: %w", codeArtListVersionsString(input), err)
+		}
+		logf("Got CodeArtifact versions: %v Count:%d", codeArtListVersionsString(input), len(output.Versions))
+
+		buf := bytes.NewBuffer(nil)
+		for _, version := range output.Versions {
+			fmt.Fprintf(buf, "%v\n", aws.ToString(version.Version))
+		}
+
+		return io.NopCloser(buf), nil
 	}
 
 	asset := attifact[3:]
@@ -53,15 +93,7 @@ func (r *CodeArtifactRepoConfig) Get(ctx context.Context, module, attifact strin
 		return nil, fmt.Errorf("Asset extension not supported: %v/%v", module, attifact)
 	}
 
-	pkg := codeArtPackageEscape(module)
 	version := asset[:len(asset)-len(assetExt)]
-
-	client, err := r.getClient(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	namespace := codeArtNamespaceDefault(r.Namespace)
 
 	input := &codeartifact.GetPackageVersionAssetInput{
 		Asset:          aws.String(asset),
@@ -194,9 +226,18 @@ func codeArtAssetSHA256(data []byte) string {
 	return fmt.Sprintf("%x", sha256.Sum256(data))
 }
 
+func codeArtListVersionsString(input *codeartifact.ListPackageVersionsInput) string {
+	return fmt.Sprintf(
+		"Domain:%v(%v) Repo:%v NS:%v Pkg:%v",
+		aws.ToString(input.Domain), aws.ToString(input.DomainOwner),
+		aws.ToString(input.Repository), aws.ToString(input.Namespace),
+		aws.ToString(input.Package),
+	)
+}
+
 func codeArtGetAssetString(input *codeartifact.GetPackageVersionAssetInput) string {
 	return fmt.Sprintf(
-		"Domain:%v(%v) Repo:%v NS:%v, Pkg:%v Version:%v: Asset:%v",
+		"Domain:%v(%v) Repo:%v NS:%v Pkg:%v Version:%v: Asset:%v",
 		aws.ToString(input.Domain), aws.ToString(input.DomainOwner),
 		aws.ToString(input.Repository), aws.ToString(input.Namespace),
 		aws.ToString(input.Package), aws.ToString(input.PackageVersion),
@@ -206,7 +247,7 @@ func codeArtGetAssetString(input *codeartifact.GetPackageVersionAssetInput) stri
 
 func codeArtPublishAssetString(input *codeartifact.PublishPackageVersionInput) string {
 	return fmt.Sprintf(
-		"Domain:%v(%v) Repo:%v NS:%v, Pkg:%v Version:%v Asset:%v ",
+		"Domain:%v(%v) Repo:%v NS:%v Pkg:%v Version:%v Asset:%v",
 		aws.ToString(input.Domain), aws.ToString(input.DomainOwner),
 		aws.ToString(input.Repository), aws.ToString(input.Namespace),
 		aws.ToString(input.Package), aws.ToString(input.PackageVersion),
