@@ -78,6 +78,11 @@ func newProxyHandler(config *Config) http.Handler {
 			return
 		}
 
+		if strings.HasPrefix(req.URL.Path, "/sumdb") {
+			resp.WriteHeader(http.StatusNotFound)
+			return
+		}
+
 		atIndex := strings.Index(req.URL.Path, "@")
 		if atIndex < 0 {
 			logf("Error parsing request path: %v: '@' expected", req.URL.Path)
