@@ -16,7 +16,7 @@ type RawConfig struct {
 }
 
 type Repository interface {
-	Get(ctx context.Context, module, attifact string) (io.ReadCloser, int, error)
+	Get(ctx context.Context, module, attifact string) (io.ReadCloser, error)
 	Put(ctx context.Context, module, version string, goModData, goInfoData, goZipData []byte) error
 }
 
