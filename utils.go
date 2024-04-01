@@ -35,7 +35,7 @@ func getGoInfoFromGit(ctx context.Context, version string) ([]byte, string, erro
 		return nil, "", fmt.Errorf("Current directory is not in a Git repository: %w", err)
 	}
 
-	gitCommitTime, err := exec.CommandContext(ctx, "git", "show", "--no-patch", "--format=%ct", version).Output()
+	gitCommitTime, err := exec.CommandContext(ctx, "git", "log", "--max-count=1", "--format=%ct", version).Output()
 	if err != nil {
 		return nil, "", fmt.Errorf("Git revision not found: %s: %w", version, err)
 	}
